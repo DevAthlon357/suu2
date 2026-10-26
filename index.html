@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="my">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Sweet Rope: Feed the Kitty 🍓🐱</title>
+
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#f2e4e7">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            background: #f2e4e7;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .game-container {
+            width: 100vw;
+            height: 100vh;
+            max-width: 440px;
+            position: relative;
+            background: #fcf1f3;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 30px rgba(217, 95, 119, 0.2);
+            overflow: hidden;
+        }
+
+        /* TOP HUD */
+        .hud {
+            position: absolute;
+            top: 14px;
+            left: 0;
+            width: 100%;
+            padding: 0 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .hud-badge {
+            background: rgba(255, 255, 255, 0.92);
+            border: 1.5px solid #f5cbd4;
+            color: #d95f77;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 0.84rem;
+            font-weight: 800;
+            box-shadow: 0 3px 10px rgba(217, 95, 119, 0.12);
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .hud-right {
+            display: flex;
+            gap: 6px;
+            pointer-events: auto;
+        }
+
+        .icon-btn {
+            background: rgba(255, 255, 255, 0.92);
+            border: 1.5px solid #f5cbd4;
+            color: #d95f77;
+            padding: 6px 11px;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 3px 10px rgba(217, 95, 119, 0.12);
+            transition: transform 0.1s;
+        }
+
+        .icon-btn:active {
+            transform: scale(0.92);
+        }
+
+        /* CANVAS */
+        #gameCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            touch-action: none;
+        }
+
+        /* OVERLAY SCREEN (CONGRATS ONLY) */
+        .overlay-page {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(252, 241, 243, 0.96);
+            backdrop-filter: blur(8px);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 28px 22px;
+            text-align: center;
+            z-index: 30;
+        }
+
+        .overlay-page.active {
+            display: flex;
+        }
+
+        .page-card {
+            background: #ffffff;
+            border: 2px solid #f8d7df;
+            border-radius: 26px;
+            padding: 28px 20px;
+            width: 100%;
+            max-width: 350px;
+            box-shadow: 0 16px 36px rgba(217, 95, 119, 0.16);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .big-icon {
+            font-size: 3.6rem;
+            margin-bottom: 12px;
+            animation: floatIcon 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes floatIcon {
+            from {
+                transform: translateY(0px);
+            }
+
+            to {
+                transform: translateY(-8px);
+            }
+        }
+
+        .page-title {
+            font-size: 1.45rem;
+            color: #d95f77;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .page-desc {
+            font-size: 0.9rem;
+            color: #6d585c;
+            line-height: 1.7;
+            margin-bottom: 22px;
+        }
+
+        .pink-btn {
+            width: 100%;
+            padding: 13px 20px;
+            border-radius: 999px;
+            font-size: 0.92rem;
+            font-weight: 800;
+            cursor: pointer;
+            border: none;
+            transition: transform 0.15s;
+            background: linear-gradient(45deg, #d95f77, #e2738a);
+            color: #ffffff;
+            box-shadow: 0 6px 16px rgba(217, 95, 119, 0.25);
+        }
+
+        .pink-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* LEVEL CLEAR TOAST */
+        .toast-modal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            background: rgba(255, 255, 255, 0.96);
+            border: 2px solid #f4c2ce;
+            border-radius: 24px;
+            padding: 22px 28px;
+            text-align: center;
+            box-shadow: 0 14px 32px rgba(217, 95, 119, 0.22);
+            z-index: 20;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.25s ease;
+        }
+
+        .toast-modal.show {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translate(-50%, -50%) scale(1);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="game-container" id="gameContainer">
+        <!-- Top HUD -->
+        <div class="hud">
+            <div class="hud-badge">🌸 Level <span id="lvlDisplay">1</span> / 20</div>
+            <div class="hud-badge" id="starsHud">⭐⭐⭐</div>
+            <div class="hud-right">
+                <button class="icon-btn" id="musicBtn" onclick="toggleMusic()">🎵 On</button>
+                <button class="icon-btn" onclick="resetCurrentLevel()">↻ ပြန်စမယ်</button>
+            </div>
+        </div>
+
+        <!-- Main Physics Canvas -->
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- Quick Level Transition Toast -->
+        <div class="toast-modal" id="levelToast">
+            <div style="font-size: 2.5rem; margin-bottom: 6px;">🍓✨</div>
+            <div style="font-size: 1.2rem; font-weight: 800; color: #d95f77; margin-bottom: 4px;" id="toastTitle">Yummy!
+            </div>
+            <div style="font-size: 0.9rem; color: #7a6367; margin-bottom: 14px;" id="toastStars">⭐⭐⭐</div>
+            <button class="pink-btn" style="padding: 10px 26px; width: auto;" onclick="nextLevel()">နောက် Level
+                ➔</button>
+        </div>
+
+        <!-- CONGRATULATIONS SCREEN (AFTER LEVEL 20) -->
+        <div class="overlay-page" id="congratsPage">
+            <div class="page-card">
+                <div class="big-icon">🏆🍓🌸</div>
+                <div class="page-title">Congratulations! 🌸</div>
+                <div class="page-desc">
+                    နိုင်သွားပြီဆုလေး Level 20 စလုံးကို အောင်မြင်စွာ ဖြတ်ကျော်နိုင်ခဲ့ပြီ! ✨<br>
+                    အရမ်းချစ်တယ်ဆု
+                  
+                    စုစုပေါင်း ကြယ်: <b><span id="totalStarsEarned">60</span> / 60 ⭐</b>
+                </div>
+                <button class="pink-btn" onclick="restartWholeGame()">↻ Play Again (အစမှပြန်ဆော့မယ်)</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('gameContainer');
+
+        let W = 380;
+        let H = 680;
+
+        function resize() {
+            W = container.clientWidth;
+            H = container.clientHeight;
+            canvas.width = W;
+            canvas.height = H;
+        }
+        window.addEventListener('resize', () => {
+            resize();
+            initLevel(currentLevelIdx);
+        });
+
+        /* ==========================================
+           WEB AUDIO API: CUTE LULLABY BGM & SFX
+        ========================================== */
+        let audioCtx = null;
+        let isMusicPlaying = true;
+        let bgmTimer = null;
+        let noteIndex = 0;
+
+        const MELODY_NOTES = [
+            523.25, 659.25, 783.99, 659.25, 880.00, 783.99, 659.25, 587.33,
+            523.25, 659.25, 783.99, 659.25, 987.77, 880.00, 783.99, 659.25,
+            698.46, 880.00, 1046.50, 880.00, 783.99, 659.25, 587.33, 659.25,
+            523.25, 587.33, 659.25, 783.99, 659.25, 587.33, 523.25, 0
+        ];
+
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            if (isMusicPlaying && !bgmTimer) {
+                startMusicLoop();
+            }
+        }
+
+        function playTone(freq, duration = 0.35, volume = 0.06, type = 'sine') {
+            if (!audioCtx || !isMusicPlaying || freq === 0) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+            gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(volume, audioCtx.currentTime + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function playSfx(kind) {
+            if (!audioCtx || !isMusicPlaying) return;
+            if (kind === 'cut') {
+                playTone(420, 0.12, 0.08, 'triangle');
+            } else if (kind === 'star') {
+                playTone(1046.5, 0.25, 0.09, 'sine');
+                setTimeout(() => playTone(1318.5, 0.3, 0.09, 'sine'), 70);
+            } else if (kind === 'bubble') {
+                playTone(600, 0.15, 0.08, 'sine');
+            } else if (kind === 'win') {
+                playTone(523.25, 0.18, 0.1, 'sine');
+                setTimeout(() => playTone(659.25, 0.18, 0.1, 'sine'), 100);
+                setTimeout(() => playTone(783.99, 0.35, 0.1, 'sine'), 200);
+            }
+        }
+
+        function startMusicLoop() {
+            if (bgmTimer) clearInterval(bgmTimer);
+            bgmTimer = setInterval(() => {
+                if (isMusicPlaying && audioCtx && audioCtx.state === 'running') {
+                    const note = MELODY_NOTES[noteIndex % MELODY_NOTES.length];
+                    playTone(note, 0.42, 0.045, 'sine');
+                    noteIndex++;
+                }
+            }, 360);
+        }
+
+        function toggleMusic() {
+            initAudio();
+            isMusicPlaying = !isMusicPlaying;
+            document.getElementById('musicBtn').innerText = isMusicPlaying ? '🎵 On' : '🔇 Off';
+        }
+
+        window.addEventListener('pointerdown', initAudio, { once: true });
+
+        /* ==========================================
+           20 BALANCED & EASY-TO-WIN LEVELS
+        ========================================== */
+        const LEVELS = [
+            // 1: Direct single drop
+            {
+                candy: { x: 0.5, y: 0.22 },
+                pet: { x: 0.5, y: 0.82 },
+                pins: [{ x: 0.5, y: 0.1, len: 0.14 }],
+                stars: [{ x: 0.5, y: 0.42 }, { x: 0.5, y: 0.56 }, { x: 0.5, y: 0.7 }]
+            },
+            // 2: Two ropes holding candy above pet
+            {
+                candy: { x: 0.5, y: 0.26 },
+                pet: { x: 0.5, y: 0.82 },
+                pins: [{ x: 0.3, y: 0.12, len: 0.24 }, { x: 0.7, y: 0.12, len: 0.24 }],
+                stars: [{ x: 0.5, y: 0.42 }, { x: 0.5, y: 0.56 }, { x: 0.5, y: 0.7 }]
+            },
+            // 3: Gentle pre-swinging pendulum
+            {
+                candy: { x: 0.25, y: 0.2, vx: 2.8 },
+                pet: { x: 0.5, y: 0.82 },
+                pins: [{ x: 0.5, y: 0.1, len: 0.28 }],
+                stars: [{ x: 0.35, y: 0.36 }, { x: 0.65, y: 0.36 }, { x: 0.5, y: 0.6 }]
+            },
+            // 4: Bubble float straight up to pet
+            {
+                candy: { x: 0.5, y: 0.52 },
+                pet: { x: 0.5, y: 0.2 },
+                pins: [{ x: 0.5, y: 0.38, len: 0.14 }],
+                bubbles: [{ x: 0.5, y: 0.68 }],
+                stars: [{ x: 0.5, y: 0.62 }, { x: 0.5, y: 0.46 }, { x: 0.5, y: 0.32 }]
+            },
+            // 5: Easy Auto-Grab Pin Swing
+            {
+                candy: { x: 0.26, y: 0.2 },
+                pet: { x: 0.65, y: 0.82 },
+                pins: [
+                    { x: 0.46, y: 0.12, len: 0.24 },
+                    { x: 0.65, y: 0.36, len: 0.2, autoRadius: 0.2 }
+                ],
+                stars: [{ x: 0.46, y: 0.36 }, { x: 0.65, y: 0.52 }, { x: 0.65, y: 0.68 }]
+            },
+            // 6: Two-rope swing to right pet
+            {
+                candy: { x: 0.35, y: 0.24 },
+                pet: { x: 0.64, y: 0.82 },
+                pins: [{ x: 0.22, y: 0.12, len: 0.2 }, { x: 0.64, y: 0.12, len: 0.3 }],
+                stars: [{ x: 0.48, y: 0.36 }, { x: 0.64, y: 0.44 }, { x: 0.64, y: 0.64 }]
+            },
+            // 7: Blower pushes candy into pet line
+            {
+                candy: { x: 0.35, y: 0.24 },
+                pet: { x: 0.65, y: 0.82 },
+                pins: [{ x: 0.35, y: 0.1, len: 0.15 }, { x: 0.65, y: 0.32, len: 0.2, autoRadius: 0.22 }],
+                blowers: [{ x: 0.16, y: 0.26, dirX: 1, dirY: 0 }],
+                stars: [{ x: 0.48, y: 0.3 }, { x: 0.65, y: 0.5 }, { x: 0.65, y: 0.68 }]
+            },
+            // 8: Slow Moving Kitty directly below
+            {
+                candy: { x: 0.5, y: 0.22 },
+                pet: { x: 0.5, y: 0.82, moveRange: 0.22, speed: 0.012 },
+                pins: [{ x: 0.5, y: 0.1, len: 0.14 }],
+                stars: [{ x: 0.5, y: 0.42 }, { x: 0.5, y: 0.56 }, { x: 0.5, y: 0.7 }]
+            },
+            // 9: Three-Rope Cradle
+            {
+                candy: { x: 0.5, y: 0.32 },
+                pet: { x: 0.5, y: 0.82 },
+                pins: [
+                    { x: 0.28, y: 0.15, len: 0.28 },
+                    { x: 0.5, y: 0.12, len: 0.2 },
+                    { x: 0.72, y: 0.15, len: 0.28 }
+                ],
+                stars: [{ x: 0.5, y: 0.48 }, { x: 0.5, y: 0.6 }, { x: 0.5, y: 0.72 }]
+            },
+            // 10: Bubble + Auto-Grab Pin
+            {
+                candy: { x: 0.35, y: 0.54 },
+                pet: { x: 0.66, y: 0.82 },
+                pins: [
+                    { x: 0.35, y: 0.38, len: 0.16 },
+                    { x: 0.48, y: 0.26, len: 0.22, autoRadius: 0.22 }
+                ],
+                bubbles: [{ x: 0.35, y: 0.68 }],
+                stars: [{ x: 0.35, y: 0.34 }, { x: 0.6, y: 0.46 }, { x: 0.66, y: 0.66 }]
+            },
+            // 11: Smooth Two-Step Auto-Grab Chain
+            {
+                candy: { x: 0.25, y: 0.2 },
+                pet: { x: 0.72, y: 0.82 },
+                pins: [
+                    { x: 0.45, y: 0.12, len: 0.22 },
+                    { x: 0.72, y: 0.32, len: 0.2, autoRadius: 0.22 }
+                ],
+                stars: [{ x: 0.45, y: 0.34 }, { x: 0.72, y: 0.5 }, { x: 0.72, y: 0.66 }]
+            },
+            // 12: Bubble Up & Pop Down to Kitty
+            {
+                candy: { x: 0.5, y: 0.62 },
+                pet: { x: 0.5, y: 0.84 },
+                pins: [{ x: 0.5, y: 0.46, len: 0.16 }],
+                bubbles: [{ x: 0.5, y: 0.72 }],
+                stars: [{ x: 0.5, y: 0.42 }, { x: 0.5, y: 0.28 }, { x: 0.5, y: 0.16 }]
+            },
+            // 13: Gentle Pendulum with Slow Kitty
+            {
+                candy: { x: 0.24, y: 0.18, vx: 2.5 },
+                pet: { x: 0.5, y: 0.82, moveRange: 0.2, speed: 0.012 },
+                pins: [{ x: 0.5, y: 0.1, len: 0.28 }],
+                stars: [{ x: 0.34, y: 0.36 }, { x: 0.5, y: 0.42 }, { x: 0.66, y: 0.36 }]
+            },
+            // 14: Left-to-Center Auto-Pin Drop
+            {
+                candy: { x: 0.74, y: 0.18 },
+                pet: { x: 0.5, y: 0.82 },
+                pins: [
+                    { x: 0.5, y: 0.12, len: 0.25 },
+                    { x: 0.5, y: 0.44, len: 0.18, autoRadius: 0.21 }
+                ],
+                stars: [{ x: 0.6, y: 0.34 }, { x: 0.5, y: 0.6 }, { x: 0.5, y: 0.72 }]
+            },
+            // 15: Blower into Bubble Elevator
+            {
+                candy: { x: 0.32, y: 0.24 },
+                pet: { x: 0.65, y: 0.22 },
+                pins: [{ x: 0.32, y: 0.1, len: 0.14 }],
+                bubbles: [{ x: 0.65, y: 0.65 }],
+                blowers: [{ x: 0.14, y: 0.26, dirX: 1, dirY: 0 }],
+                stars: [{ x: 0.48, y: 0.38 }, { x: 0.65, y: 0.52 }, { x: 0.65, y: 0.36 }]
+            },
+            // 16: Symmetric 4-Rope Diamond
+            {
+                candy: { x: 0.5, y: 0.3 },
+                pet: { x: 0.5, y: 0.82 },
+                pins: [
+                    { x: 0.26, y: 0.16, len: 0.28 },
+                    { x: 0.5, y: 0.1, len: 0.2 },
+                    { x: 0.74, y: 0.16, len: 0.28 },
+                    { x: 0.5, y: 0.48, len: 0.18, autoRadius: 0.2 }
+                ],
+                stars: [{ x: 0.5, y: 0.44 }, { x: 0.5, y: 0.62 }, { x: 0.5, y: 0.72 }]
+            },
+            // 17: Dual Rope Swing around a single safe small spike
+            {
+                candy: { x: 0.25, y: 0.2 },
+                pet: { x: 0.7, y: 0.82 },
+                pins: [
+                    { x: 0.48, y: 0.12, len: 0.25 },
+                    { x: 0.7, y: 0.34, len: 0.2, autoRadius: 0.22 }
+                ],
+                spikes: [{ x: 0.32, y: 0.65, r: 15 }],
+                stars: [{ x: 0.48, y: 0.37 }, { x: 0.7, y: 0.52 }, { x: 0.7, y: 0.68 }]
+            },
+            // 18: Twin Bubbles Up to Top Kitty
+            {
+                candy: { x: 0.5, y: 0.56 },
+                pet: { x: 0.5, y: 0.18 },
+                pins: [{ x: 0.32, y: 0.42, len: 0.22 }, { x: 0.68, y: 0.42, len: 0.22 }],
+                bubbles: [{ x: 0.5, y: 0.72 }],
+                stars: [{ x: 0.5, y: 0.48 }, { x: 0.5, y: 0.36 }, { x: 0.5, y: 0.26 }]
+            },
+            // 19: Easy Triple Auto-Pin Cascade
+            {
+                candy: { x: 0.24, y: 0.16 },
+                pet: { x: 0.5, y: 0.84 },
+                pins: [
+                    { x: 0.45, y: 0.12, len: 0.22 },
+                    { x: 0.62, y: 0.3, len: 0.2, autoRadius: 0.22 },
+                    { x: 0.5, y: 0.5, len: 0.18, autoRadius: 0.22 }
+                ],
+                stars: [{ x: 0.45, y: 0.34 }, { x: 0.62, y: 0.48 }, { x: 0.5, y: 0.68 }]
+            },
+            // 20: Fun Finale Celebration Drop
+            {
+                candy: { x: 0.3, y: 0.2 },
+                pet: { x: 0.5, y: 0.82, moveRange: 0.16, speed: 0.01 },
+                pins: [
+                    { x: 0.5, y: 0.1, len: 0.24 },
+                    { x: 0.5, y: 0.4, len: 0.18, autoRadius: 0.23 }
+                ],
+                bubbles: [{ x: 0.5, y: 0.68 }],
+                stars: [{ x: 0.5, y: 0.34 }, { x: 0.5, y: 0.56 }, { x: 0.5, y: 0.7 }]
+            }
+        ];
+
+        /* ==========================================
+           GAME STATE & ENTITIES
+        ========================================== */
+        let currentLevelIdx = 0;
+        let levelStarsScore = new Array(20).fill(0);
+        let starsCollectedThisRun = 0;
+        let gameState = 'playing';
+
+        let candy = { x: 0, y: 0, oldX: 0, oldY: 0, r: 20, inBubble: false };
+        let pet = { x: 0, y: 0, baseX: 0, moveRange: 0, speed: 0, angle: 0, mouthOpen: 0, eating: false, blinkTimer: 0 };
+        let ropes = [];
+        let pins = [];
+        let stars = [];
+        let bubbles = [];
+        let spikes = [];
+        let blowers = [];
+        let particles = [];
+        let sliceTrail = [];
+
+        let isPointerDown = false;
+        let lastPointer = { x: 0, y: 0 };
+
+        function initLevel(idx) {
+            currentLevelIdx = idx;
+            const lvl = LEVELS[idx];
+            gameState = 'playing';
+            starsCollectedThisRun = 0;
+
+            document.getElementById('lvlDisplay').innerText = idx + 1;
+            document.getElementById('levelToast').classList.remove('show');
+            updateStarsHud();
+
+            const cx = lvl.candy.x * W;
+            const cy = lvl.candy.y * H;
+            const vx = lvl.candy.vx || 0;
+            candy = {
+                x: cx,
+                y: cy,
+                oldX: cx - vx,
+                oldY: cy,
+                r: 20,
+                inBubble: false
+            };
+
+            pet = {
+                x: lvl.pet.x * W,
+                y: lvl.pet.y * H,
+                baseX: lvl.pet.x * W,
+                moveRange: (lvl.pet.moveRange || 0) * W,
+                speed: lvl.pet.speed || 0,
+                angle: 0,
+                mouthOpen: 0,
+                eating: false,
+                blinkTimer: 0
+            };
+
+            pins = [];
+            ropes = [];
+            lvl.pins.forEach((p) => {
+                const px = p.x * W;
+                const py = p.y * H;
+                const lengthPx = p.len * H;
+                const autoR = (p.autoRadius || 0) * W;
+
+                const pinObj = {
+                    x: px,
+                    y: py,
+                    len: lengthPx,
+                    autoRadius: autoR,
+                    used: !autoR
+                };
+                pins.push(pinObj);
+
+                if (!autoR) {
+                    createRope(px, py, candy.x, candy.y, lengthPx);
+                }
+            });
+
+            stars = (lvl.stars || []).map(s => ({
+                x: s.x * W,
+                y: s.y * H,
+                collected: false
+            }));
+
+            bubbles = (lvl.bubbles || []).map(b => ({
+                x: b.x * W,
+                y: b.y * H,
+                r: 28,
+                used: false
+            }));
+
+            spikes = (lvl.spikes || []).map(sp => ({
+                x: sp.x * W,
+                y: sp.y * H,
+                r: sp.r || 16,
+                rot: 0
+            }));
+
+            blowers = (lvl.blowers || []).map(bl => ({
+                x: bl.x * W,
+                y: bl.y * H,
+                dirX: bl.dirX,
+                dirY: bl.dirY,
+                puffAnim: 0
+            }));
+
+            particles = [];
+            sliceTrail = [];
+        }
+
+        function createRope(x1, y1, x2, y2, totalLen) {
+            const segments = 12;
+            const segLen = totalLen / segments;
+            const nodes = [];
+            for (let i = 0; i <= segments; i++) {
+                const t = i / segments;
+                const nx = x1 + (x2 - x1) * t;
+                const ny = y1 + (y2 - y1) * t;
+                nodes.push({ x: nx, y: ny, oldX: nx, oldY: ny, pinned: i === 0 });
+            }
+            ropes.push({ nodes, segLen, active: true });
+        }
+
+        function updateStarsHud() {
+            let s = '';
+            for (let i = 0; i < 3; i++) {
+                s += i < starsCollectedThisRun ? '⭐' : '☆';
+            }
+            document.getElementById('starsHud').innerText = s;
+        }
+
+        /* ==========================================
+           PHYSICS & FORGIVING MAGNET ASSIST
+        ========================================== */
+        function updatePhysics() {
+            if (gameState !== 'playing') return;
+
+            const vx = (candy.x - candy.oldX) * 0.988;
+            const vy = (candy.y - candy.oldY) * 0.988;
+            candy.oldX = candy.x;
+            candy.oldY = candy.y;
+
+            const gravity = candy.inBubble ? -0.15 : 0.3;
+            candy.x += vx;
+            candy.y += vy + gravity;
+
+            if (candy.x < 24) candy.x = 24;
+            if (candy.x > W - 24) candy.x = W - 24;
+
+            for (const rope of ropes) {
+                if (!rope.active) continue;
+                const nodes = rope.nodes;
+
+                for (let i = 1; i < nodes.length; i++) {
+                    const n = nodes[i];
+                    const rvx = (n.x - n.oldX) * 0.98;
+                    const rvy = (n.y - n.oldY) * 0.98;
+                    n.oldX = n.x;
+                    n.oldY = n.y;
+                    n.x += rvx;
+                    n.y += rvy + 0.22;
+                }
+
+                const last = nodes[nodes.length - 1];
+                last.x = candy.x;
+                last.y = candy.y;
+
+                for (let iter = 0; iter < 10; iter++) {
+                    for (let i = 0; i < nodes.length - 1; i++) {
+                        const n1 = nodes[i];
+                        const n2 = nodes[i + 1];
+                        const dx = n2.x - n1.x;
+                        const dy = n2.y - n1.y;
+                        const dist = Math.hypot(dx, dy) || 0.001;
+                        const diff = (dist - rope.segLen) / dist;
+
+                        if (n1.pinned) {
+                            n2.x -= dx * diff;
+                            n2.y -= dy * diff;
+                        } else {
+                            n1.x += dx * diff * 0.5;
+                            n1.y += dy * diff * 0.5;
+                            n2.x -= dx * diff * 0.5;
+                            n2.y -= dy * diff * 0.5;
+                        }
+                    }
+                    candy.x = last.x;
+                    candy.y = last.y;
+                }
+            }
+
+            for (const pin of pins) {
+                if (!pin.used && pin.autoRadius > 0) {
+                    const d = Math.hypot(candy.x - pin.x, candy.y - pin.y);
+                    if (d <= pin.autoRadius) {
+                        pin.used = true;
+                        createRope(pin.x, pin.y, candy.x, candy.y, Math.min(d, pin.len));
+                        playSfx('bubble');
+                        spawnParticles(pin.x, pin.y, '#e2738a', 10);
+                    }
+                }
+            }
+
+            for (const b of bubbles) {
+                if (!b.used) {
+                    const d = Math.hypot(candy.x - b.x, candy.y - b.y);
+                    if (d < candy.r + b.r + 8) {
+                        b.used = true;
+                        candy.inBubble = true;
+                        playSfx('bubble');
+                        spawnParticles(b.x, b.y, '#a2d2ff', 12);
+                    }
+                }
+            }
+
+            for (const st of stars) {
+                if (!st.collected) {
+                    const d = Math.hypot(candy.x - st.x, candy.y - st.y);
+                    if (d < candy.r + 28) {
+                        st.collected = true;
+                        starsCollectedThisRun++;
+                        updateStarsHud();
+                        playSfx('star');
+                        spawnParticles(st.x, st.y, '#ffd166', 14);
+                    }
+                }
+            }
+
+            for (const sp of spikes) {
+                sp.rot += 0.03;
+                const d = Math.hypot(candy.x - sp.x, candy.y - sp.y);
+                if (d < candy.r + sp.r - 6) {
+                    triggerLevelFail();
+                    return;
+                }
+            }
+
+            if (pet.moveRange > 0) {
+                pet.angle += pet.speed;
+                pet.x = pet.baseX + Math.sin(pet.angle) * pet.moveRange;
+            }
+
+            const distToPet = Math.hypot(candy.x - pet.x, candy.y - pet.y);
+            pet.mouthOpen = distToPet < 130 ? 1 : 0;
+
+            if (distToPet < 95) {
+                candy.x += (pet.x - candy.x) * 0.08;
+                candy.y += (pet.y - candy.y) * 0.08;
+            }
+
+            if (distToPet < 44) {
+                triggerLevelWin();
+                return;
+            }
+
+            if (candy.y > H + 60 || candy.y < -60) {
+                triggerLevelFail();
+            }
+        }
+
+        function triggerLevelWin() {
+            gameState = 'won';
+            pet.eating = true;
+            playSfx('win');
+            levelStarsScore[currentLevelIdx] = Math.max(levelStarsScore[currentLevelIdx], Math.max(1, starsCollectedThisRun));
+            spawnParticles(pet.x, pet.y, '#ff8fab', 28);
+
+            setTimeout(() => {
+                if (currentLevelIdx === LEVELS.length - 1) {
+                    const totalStars = levelStarsScore.reduce((a, b) => a + b, 0);
+                    document.getElementById('totalStarsEarned').innerText = totalStars;
+                    document.getElementById('congratsPage').classList.add('active');
+                } else {
+                    const toast = document.getElementById('levelToast');
+                    let starStr = '';
+                    const earned = Math.max(1, starsCollectedThisRun);
+                    for (let i = 0; i < 3; i++) starStr += i < earned ? '⭐' : '☆';
+                    document.getElementById('toastStars').innerText = starStr;
+                    document.getElementById('toastTitle').innerText = `Level ${currentLevelIdx + 1} အောင်မြင်ပြီ! 🌸`;
+                    toast.classList.add('show');
+                }
+            }, 450);
+        }
+
+        function triggerLevelFail() {
+            gameState = 'lost';
+            spawnParticles(candy.x, candy.y, '#e2738a', 20);
+            setTimeout(() => {
+                initLevel(currentLevelIdx);
+            }, 600);
+        }
+
+        function nextLevel() {
+            if (currentLevelIdx + 1 < LEVELS.length) {
+                initLevel(currentLevelIdx + 1);
+            }
+        }
+
+        function resetCurrentLevel() {
+            initLevel(currentLevelIdx);
+        }
+
+        function restartWholeGame() {
+            document.getElementById('congratsPage').classList.remove('active');
+            levelStarsScore = new Array(20).fill(0);
+            initLevel(0);
+        }
+
+        /* ==========================================
+           INPUT CONTROLS
+        ========================================== */
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+        }
+
+        canvas.addEventListener('pointerdown', (e) => {
+            initAudio();
+            if (gameState !== 'playing') return;
+            const p = getPos(e);
+            isPointerDown = true;
+            lastPointer = p;
+            sliceTrail.push({ x: p.x, y: p.y, life: 12 });
+
+            if (candy.inBubble && Math.hypot(p.x - candy.x, p.y - candy.y) < 44) {
+                candy.inBubble = false;
+                playSfx('bubble');
+                spawnParticles(candy.x, candy.y, '#a2d2ff', 14);
+                return;
+            }
+
+            for (const bl of blowers) {
+                if (Math.hypot(p.x - bl.x, p.y - bl.y) < 42) {
+                    bl.puffAnim = 15;
+                    playSfx('cut');
+                    const dist = Math.hypot(candy.x - bl.x, candy.y - bl.y);
+                    if (dist < 260) {
+                        const force = (1 - dist / 280) * 9.5;
+                        candy.oldX -= bl.dirX * force;
+                        candy.oldY -= bl.dirY * force;
+                    }
+                    spawnParticles(bl.x + bl.dirX * 20, bl.y, '#ffffff', 10);
+                    return;
+                }
+            }
+        });
+
+        canvas.addEventListener('pointermove', (e) => {
+            if (!isPointerDown || gameState !== 'playing') return;
+            const p = getPos(e);
+            sliceTrail.push({ x: p.x, y: p.y, life: 12 });
+
+            for (const rope of ropes) {
+                if (!rope.active) continue;
+                const nodes = rope.nodes;
+                for (let i = 0; i < nodes.length - 1; i++) {
+                    if (linesIntersect(lastPointer.x, lastPointer.y, p.x, p.y, nodes[i].x, nodes[i].y, nodes[i + 1].x, nodes[i + 1].y)) {
+                        rope.active = false;
+                        playSfx('cut');
+                        spawnParticles(nodes[i].x, nodes[i].y, '#d95f77', 10);
+                        break;
+                    }
+                }
+            }
+
+            lastPointer = p;
+        });
+
+        window.addEventListener('pointerup', () => {
+            isPointerDown = false;
+        });
+
+        function linesIntersect(x1, y1, x2, y2, x3, y3, x4, y4) {
+            const denom = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1);
+            if (denom === 0) return false;
+            const ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denom;
+            const ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denom;
+            return ua >= 0 && ua <= 1 && ub >= 0 && ub <= 1;
+        }
+
+        function spawnParticles(x, y, color, count) {
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x,
+                    y,
+                    vx: (Math.random() - 0.5) * 6,
+                    vy: (Math.random() - 0.5) * 6,
+                    r: Math.random() * 4 + 2,
+                    color,
+                    life: 24
+                });
+            }
+        }
+
+        /* ==========================================
+           CUSTOM HAND-DRAWN KAWAII KITTY
+        ========================================== */
+        function drawCuteKitty(x, y, mouthOpen, eating) {
+            ctx.save();
+            ctx.translate(x, y);
+
+            pet.blinkTimer = (pet.blinkTimer + 1) % 180;
+            const isBlinking = pet.blinkTimer > 170;
+
+            // 1. Soft Pink Cushion Underneath
+            ctx.fillStyle = '#f3c6d1';
+            ctx.beginPath();
+            ctx.ellipse(0, 24, 42, 13, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 2. Chubby White/Cream Body
+            ctx.fillStyle = '#fffafb';
+            ctx.strokeStyle = '#e6b8c2';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.ellipse(0, 12, 26, 18, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // 3. Cute Left & Right Ears
+            ctx.fillStyle = '#fffafb';
+            ctx.beginPath();
+            ctx.moveTo(-22, -8);
+            ctx.lineTo(-27, -30);
+            ctx.lineTo(-7, -20);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(22, -8);
+            ctx.lineTo(27, -30);
+            ctx.lineTo(7, -20);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Pink Inner Ears
+            ctx.fillStyle = '#ffb3c6';
+            ctx.beginPath();
+            ctx.moveTo(-20, -11);
+            ctx.lineTo(-23, -25);
+            ctx.lineTo(-10, -18);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(20, -11);
+            ctx.lineTo(23, -25);
+            ctx.lineTo(10, -18);
+            ctx.closePath();
+            ctx.fill();
+
+            // 4. Round Kawaii Head
+            ctx.fillStyle = '#fffafb';
+            ctx.beginPath();
+            ctx.ellipse(0, -4, 27, 22, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // 5. Little Pink Ribbon Bow on Right Ear
+            ctx.fillStyle = '#ff5d8f';
+            ctx.beginPath();
+            ctx.ellipse(14, -22, 6, 4, -0.3, 0, Math.PI * 2);
+            ctx.ellipse(23, -19, 6, 4, 0.3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#ffccd5';
+            ctx.beginPath();
+            ctx.arc(18.5, -20.5, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 6. Rosy Pink Cheeks
+            ctx.fillStyle = 'rgba(255, 143, 171, 0.55)';
+            ctx.beginPath();
+            ctx.ellipse(-15, 0, 5.5, 3.2, 0, 0, Math.PI * 2);
+            ctx.ellipse(15, 0, 5.5, 3.2, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 7. Eyes
+            ctx.strokeStyle = '#593e43';
+            ctx.fillStyle = '#593e43';
+            ctx.lineWidth = 2.2;
+            ctx.lineCap = 'round';
+
+            if (eating || isBlinking) {
+                ctx.beginPath();
+                ctx.arc(-10, -5, 4.5, Math.PI, 0, false);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(10, -5, 4.5, Math.PI, 0, false);
+                ctx.stroke();
+            } else {
+                ctx.beginPath();
+                ctx.arc(-10, -5, 4.2, 0, Math.PI * 2);
+                ctx.arc(10, -5, 4.2, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(-11.2, -6.5, 1.6, 0, Math.PI * 2);
+                ctx.arc(8.8, -6.5, 1.6, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // 8. Tiny Pink Nose
+            ctx.fillStyle = '#ff758f';
+            ctx.beginPath();
+            ctx.ellipse(0, -1, 2.5, 1.8, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 9. Mouth
+            if (mouthOpen && !eating) {
+                ctx.fillStyle = '#ff758f';
+                ctx.beginPath();
+                ctx.ellipse(0, 6, 7, 8, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#ffb3c6';
+                ctx.beginPath();
+                ctx.ellipse(0, 9, 4.5, 4, 0, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                ctx.strokeStyle = '#593e43';
+                ctx.lineWidth = 1.8;
+                ctx.beginPath();
+                ctx.arc(-3, 2.5, 3, 0, Math.PI, false);
+                ctx.arc(3, 2.5, 3, 0, Math.PI, false);
+                ctx.stroke();
+            }
+
+            // 10. Cute Little White Paws
+            ctx.fillStyle = '#fffafb';
+            ctx.strokeStyle = '#e6b8c2';
+            ctx.lineWidth = 1.8;
+            ctx.beginPath();
+            ctx.ellipse(-12, 20, 6, 4.5, 0, 0, Math.PI * 2);
+            ctx.ellipse(12, 20, 6, 4.5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        /* ==========================================
+           MAIN RENDER LOOP
+        ========================================== */
+        function render() {
+            ctx.clearRect(0, 0, W, H);
+
+            for (const pin of pins) {
+                if (!pin.used && pin.autoRadius > 0) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.setLineDash([6, 6]);
+                    ctx.strokeStyle = 'rgba(217, 95, 119, 0.45)';
+                    ctx.lineWidth = 2;
+                    ctx.arc(pin.x, pin.y, pin.autoRadius, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.restore();
+                }
+
+                ctx.fillStyle = '#d95f77';
+                ctx.beginPath();
+                ctx.arc(pin.x, pin.y, 7, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            for (const rope of ropes) {
+                if (!rope.active) continue;
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(rope.nodes[0].x, rope.nodes[0].y);
+                for (let i = 1; i < rope.nodes.length; i++) {
+                    ctx.lineTo(rope.nodes[i].x, rope.nodes[i].y);
+                }
+                ctx.strokeStyle = '#c96a7d';
+                ctx.lineWidth = 4;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            for (const bl of blowers) {
+                if (bl.puffAnim > 0) bl.puffAnim--;
+                ctx.save();
+                ctx.translate(bl.x, bl.y);
+                const scale = bl.puffAnim > 0 ? 1.18 : 1.0;
+                ctx.scale(scale, scale);
+
+                ctx.fillStyle = '#ffffff';
+                ctx.strokeStyle = '#e2738a';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.arc(0, 0, 24, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.font = '22px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(bl.dirX > 0 ? '💨' : '🌬️', 0, 2);
+                ctx.restore();
+            }
+
+            for (const sp of spikes) {
+                ctx.save();
+                ctx.translate(sp.x, sp.y);
+                ctx.rotate(sp.rot);
+                ctx.fillStyle = '#e0536c';
+                const teeth = 8;
+                ctx.beginPath();
+                for (let i = 0; i < teeth * 2; i++) {
+                    const rad = i % 2 === 0 ? sp.r + 4 : sp.r - 4;
+                    const a = (i * Math.PI) / teeth;
+                    const x = Math.cos(a) * rad;
+                    const y = Math.sin(a) * rad;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.fillStyle = '#fff0f3';
+                ctx.beginPath();
+                ctx.arc(0, 0, sp.r * 0.45, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            for (const b of bubbles) {
+                if (b.used) continue;
+                drawBubbleCircle(b.x, b.y, b.r);
+            }
+
+            for (const st of stars) {
+                if (st.collected) continue;
+                ctx.font = '26px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('⭐', st.x, st.y);
+            }
+
+            drawCuteKitty(pet.x, pet.y, pet.mouthOpen, pet.eating);
+
+            if (gameState !== 'won') {
+                ctx.save();
+                ctx.font = '34px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('🍓', candy.x, candy.y);
+                ctx.restore();
+
+                if (candy.inBubble) {
+                    drawBubbleCircle(candy.x, candy.y, 28);
+                }
+            }
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const pt = particles[i];
+                pt.x += pt.vx;
+                pt.y += pt.vy;
+                pt.life--;
+                if (pt.life <= 0) {
+                    particles.splice(i, 1);
+                    continue;
+                }
+                ctx.save();
+                ctx.globalAlpha = pt.life / 24;
+                ctx.fillStyle = pt.color;
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            if (sliceTrail.length > 1) {
+                ctx.save();
+                ctx.beginPath();
+                for (let i = 0; i < sliceTrail.length; i++) {
+                    const t = sliceTrail[i];
+                    if (i === 0) ctx.moveTo(t.x, t.y);
+                    else ctx.lineTo(t.x, t.y);
+                }
+                ctx.strokeStyle = '#ff4d79';
+                ctx.lineWidth = 4;
+                ctx.lineCap = 'round';
+                ctx.stroke();
+                ctx.restore();
+            }
+            for (let i = sliceTrail.length - 1; i >= 0; i--) {
+                sliceTrail[i].life--;
+                if (sliceTrail[i].life <= 0) sliceTrail.splice(i, 1);
+            }
+        }
+
+        function drawBubbleCircle(x, y, r) {
+            ctx.save();
+            ctx.fillStyle = 'rgba(185, 228, 255, 0.38)';
+            ctx.strokeStyle = '#7ec8f8';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.beginPath();
+            ctx.arc(x - r * 0.35, y - r * 0.35, r * 0.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function loop() {
+            updatePhysics();
+            render();
+            requestAnimationFrame(loop);
+        }
+
+        window.onload = () => {
+            resize();
+            initLevel(0);
+            loop();
+        };
+    </script>
+</body>
+
+</html>
